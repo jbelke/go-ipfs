@@ -1,6 +1,8 @@
 package cidenc
 
 import (
+	cidv0v1 "github.com/ipfs/go-ipfs/thirdparty/cidv0v1"
+
 	cid "gx/ipfs/QmPSQnBKM9g7BaUcZCvswUJVscQ1ipjmwxN5PXCjkp9EQ7/go-cid"
 	path "gx/ipfs/QmX7uSbkNz76yNwBhuwYwRbhihLnJqM73VTCjS3UMJud9A/go-path"
 	mbase "gx/ipfs/QmekxXDhCxCJRNuzmHreuaT3BsuJcsjcXWNrtV9C8DRHtd/go-multibase"
@@ -104,6 +106,11 @@ func (enc Encoder) WithOverride(cids ...string) Interface {
 			continue
 		}
 		override[c] = v
+		c2 := cidv0v1.TryOtherCidVersion(c)
+		if c2.Defined() {
+			override[c2] = v
+		}
+
 	}
 	if len(override) == 0 {
 		return enc

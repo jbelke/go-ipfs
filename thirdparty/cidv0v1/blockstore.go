@@ -20,7 +20,7 @@ func (b *blockstore) Has(c cid.Cid) (bool, error) {
 	if have || err != nil {
 		return have, err
 	}
-	c1 := tryOtherCidVersion(c)
+	c1 := TryOtherCidVersion(c)
 	if !c1.Defined() {
 		return false, nil
 	}
@@ -35,7 +35,7 @@ func (b *blockstore) Get(c cid.Cid) (blocks.Block, error) {
 	if err != bs.ErrNotFound {
 		return nil, err
 	}
-	c1 := tryOtherCidVersion(c)
+	c1 := TryOtherCidVersion(c)
 	if !c1.Defined() {
 		return nil, bs.ErrNotFound
 	}
@@ -65,14 +65,15 @@ func (b *blockstore) GetSize(c cid.Cid) (int, error) {
 	if err != bs.ErrNotFound {
 		return -1, err
 	}
-	c1 := tryOtherCidVersion(c)
+	c1 := TryOtherCidVersion(c)
 	if !c1.Defined() {
 		return -1, bs.ErrNotFound
 	}
 	return b.Blockstore.GetSize(c1)
 }
 
-func tryOtherCidVersion(c cid.Cid) cid.Cid {
+// FIXME: Move this to go-cidutil
+func TryOtherCidVersion(c cid.Cid) cid.Cid {
 	prefix := c.Prefix()
 	if prefix.Codec != cid.DagProtobuf || prefix.MhType != mh.SHA2_256 || prefix.MhLength != 32 {
 		return cid.Undef
