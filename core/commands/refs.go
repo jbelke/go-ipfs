@@ -9,6 +9,7 @@ import (
 
 	cmds "github.com/ipfs/go-ipfs/commands"
 	"github.com/ipfs/go-ipfs/core"
+	cidenc "github.com/ipfs/go-ipfs/core/cidenc"
 	e "github.com/ipfs/go-ipfs/core/commands/e"
 
 	cid "gx/ipfs/QmPSQnBKM9g7BaUcZCvswUJVscQ1ipjmwxN5PXCjkp9EQ7/go-cid"
@@ -117,6 +118,12 @@ NOTE: List all references recursively by using the flag '-r'.
 			format = "<src> -> <dst>"
 		}
 
+		enc, err := HandleCidBaseWithOverrideLegacy(req)
+		if err != nil {
+			res.SetError(err, cmdkit.ErrNormal)
+			return
+		}
+
 		objs, err := objectsForPaths(ctx, n, req.Arguments())
 		if err != nil {
 			res.SetError(err, cmdkit.ErrNormal)
@@ -136,6 +143,7 @@ NOTE: List all references recursively by using the flag '-r'.
 				Unique:   unique,
 				PrintFmt: format,
 				MaxDepth: maxDepth,
+				Encoder:  enc,
 			}
 
 			for _, o := range objs {
@@ -245,6 +253,7 @@ type RefWriter struct {
 	Unique   bool
 	MaxDepth int
 	PrintFmt string
+	Encoder  cidenc.Interface
 
 	seen map[string]int
 }
@@ -379,11 +388,11 @@ func (rw *RefWriter) WriteEdge(from, to cid.Cid, linkname string) error {
 	switch {
 	case rw.PrintFmt != "":
 		s = rw.PrintFmt
-		s = strings.Replace(s, "<src>", from.String(), -1)
-		s = strings.Replace(s, "<dst>", to.String(), -1)
+		s = strings.Replace(s, "<src>", rw.Encoder.Encode(from), -1)
+		s = strings.Replace(s, "<dst>", rw.Encoder.Encode(to), -1)
 		s = strings.Replace(s, "<linkname>", linkname, -1)
 	default:
-		s += to.String()
+		s += rw.Encoder.Encode(to)
 	}
 
 	rw.out <- &RefWrapper{Ref: s}
