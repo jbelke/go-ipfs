@@ -19,13 +19,14 @@ import (
 
 	cid "gx/ipfs/QmPSQnBKM9g7BaUcZCvswUJVscQ1ipjmwxN5PXCjkp9EQ7/go-cid"
 	"gx/ipfs/QmSP88ryZkHSRn1fnngAaV2Vcn63WUJzAavnRM9CVdU1Ky/go-ipfs-cmdkit"
+	apicid "gx/ipfs/QmSwrzRygK8yHBzd8gJJYedttQVQTZJrbEbpEBYvQLaRy8/go-cidutil/apicid"
 	offline "gx/ipfs/QmcRC35JF2pJQneAxa5LdQBQRumWggccWErogSrCkS1h8T/go-ipfs-exchange-offline"
 	ipld "gx/ipfs/QmdDXJs4axxefSPgK6Y1QhpJWKuDPnGJiqgq4uncb4rFHL/go-ipld-format"
 )
 
 type LsLink struct {
 	Name string
-	Hash core.APICid
+	Hash apicid.Hash
 	Size uint64
 	Type unixfspb.Data_DataType
 }
@@ -161,7 +162,7 @@ The JSON output contains type information.
 				}
 				output[i].Links[j] = LsLink{
 					Name: link.Name,
-					Hash: core.FromCid(link.Cid),
+					Hash: apicid.FromCid(link.Cid),
 					Size: link.Size,
 					Type: t,
 				}
@@ -172,7 +173,7 @@ The JSON output contains type information.
 	},
 	Marshalers: cmds.MarshalerMap{
 		cmds.Text: func(res cmds.Response) (io.Reader, error) {
-			_, err := HandleCidBaseLegacy(nil, res.Request())
+			_, err := NewCidBaseHandlerLegacy(res.Request()).UseGlobal().Proc()
 			if err != nil {
 				return nil, err
 			}

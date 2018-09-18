@@ -9,8 +9,8 @@ import (
 
 	cmds "github.com/ipfs/go-ipfs/commands"
 	"github.com/ipfs/go-ipfs/core"
-	cidenc "github.com/ipfs/go-ipfs/core/cidenc"
 	e "github.com/ipfs/go-ipfs/core/commands/e"
+	cidenc "gx/ipfs/QmSwrzRygK8yHBzd8gJJYedttQVQTZJrbEbpEBYvQLaRy8/go-cidutil/cidenc"
 
 	cid "gx/ipfs/QmPSQnBKM9g7BaUcZCvswUJVscQ1ipjmwxN5PXCjkp9EQ7/go-cid"
 	cmdkit "gx/ipfs/QmSP88ryZkHSRn1fnngAaV2Vcn63WUJzAavnRM9CVdU1Ky/go-ipfs-cmdkit"
@@ -118,11 +118,12 @@ NOTE: List all references recursively by using the flag '-r'.
 			format = "<src> -> <dst>"
 		}
 
-		enc, err := HandleCidBaseWithOverrideLegacy(req)
+		h, err := NewCidBaseHandlerLegacy(req).Proc()
 		if err != nil {
 			res.SetError(err, cmdkit.ErrNormal)
 			return
 		}
+		enc := h.Encoder()
 
 		objs, err := objectsForPaths(ctx, n, req.Arguments())
 		if err != nil {
@@ -177,6 +178,13 @@ Displays the hashes of all local objects.
 			return
 		}
 
+		h, err := NewCidBaseHandlerLegacy(req).Proc()
+		if err != nil {
+			res.SetError(err, cmdkit.ErrNormal)
+			return
+		}
+		enc := h.Encoder()
+
 		// todo: make async
 		allKeys, err := n.Blockstore.AllKeysChan(ctx)
 		if err != nil {
@@ -192,7 +200,7 @@ Displays the hashes of all local objects.
 
 			for k := range allKeys {
 				select {
-				case out <- &RefWrapper{Ref: k.String()}:
+				case out <- &RefWrapper{Ref: enc.Encode(k)}:
 				case <-req.Context().Done():
 					return
 				}
@@ -205,6 +213,11 @@ Displays the hashes of all local objects.
 
 var refsMarshallerMap = cmds.MarshalerMap{
 	cmds.Text: func(res cmds.Response) (io.Reader, error) {
+		_, err := NewCidBaseHandlerLegacy(res.Request()).UseGlobal().Proc()
+		if err != nil {
+			return nil, err
+		}
+
 		v, err := unwrapOutput(res.Output())
 		if err != nil {
 			return nil, err

@@ -7,12 +7,12 @@ import (
 
 	oldcmds "github.com/ipfs/go-ipfs/commands"
 	lgc "github.com/ipfs/go-ipfs/commands/legacy"
-	cidenc "github.com/ipfs/go-ipfs/core/cidenc"
 	dag "github.com/ipfs/go-ipfs/core/commands/dag"
 	e "github.com/ipfs/go-ipfs/core/commands/e"
 	name "github.com/ipfs/go-ipfs/core/commands/name"
 	ocmd "github.com/ipfs/go-ipfs/core/commands/object"
 	unixfs "github.com/ipfs/go-ipfs/core/commands/unixfs"
+	cidenc "gx/ipfs/QmSwrzRygK8yHBzd8gJJYedttQVQTZJrbEbpEBYvQLaRy8/go-cidutil/cidenc"
 
 	"gx/ipfs/QmPTfgFTo9PFr1PvPKyKoeMgBvYPh6cX3aDP7DHKVbnCbi/go-ipfs-cmds"
 	logging "gx/ipfs/QmRREK2CAZ5Re2Bd9zZFG6FeYDppUWt5cMgsoUEp3ktgSr/go-log"
@@ -229,49 +229,66 @@ func MessageTextMarshaler(res oldcmds.Response) (io.Reader, error) {
 	return strings.NewReader(out.Message), nil
 }
 
-func handleCidBase(enc *cidenc.Encoder, base string, upgrade bool, upgradeDefined bool) (bool, error) {
-	if enc == nil {
-		enc = &cidenc.Default
-	}
-	e := *enc
+type CidBaseHandler struct {
+	base           string
+	upgrade        bool
+	upgradeDefined bool
+	args           []string
+	enc            *cidenc.Encoder
+}
 
-	if base != "" {
+func NewCidBaseHandler(req *cmds.Request) *CidBaseHandler {
+	h := &CidBaseHandler{}
+	h.base, _ = req.Options[CidBaseOption].(string)
+	h.upgrade, h.upgradeDefined = req.Options[UpgradeCidV0Option].(bool)
+	h.args = req.Arguments
+	return h
+}
+
+func NewCidBaseHandlerLegacy(req oldcmds.Request) *CidBaseHandler {
+	h := &CidBaseHandler{}
+	h.base, _, _ = req.Option(CidBaseOption).String()
+	h.upgrade, h.upgradeDefined, _ = req.Option(UpgradeCidV0Option).Bool()
+	h.args = req.Arguments()
+	return h
+}
+
+func (h *CidBaseHandler) UseGlobal() *CidBaseHandler {
+	h.enc = &cidenc.Default
+	return h
+}
+
+func (h *CidBaseHandler) Proc() (*CidBaseHandler, error) {
+	var e cidenc.Encoder = cidenc.Default
+	if h.base != "" {
 		var err error
-		e.Base, err = mbase.EncoderByName(base)
+		e.Base, err = mbase.EncoderByName(h.base)
 		if err != nil {
-			return false, err
+			return h, err
 		}
 	}
 
-	e.Upgrade = upgrade
-	if base != "" && !upgradeDefined {
+	e.Upgrade = h.upgrade
+	if h.base != "" && !h.upgradeDefined {
 		e.Upgrade = true
 	}
 
-	*enc = e
-	return base != "" || upgradeDefined, nil
-}
-
-func HandleCidBase(enc *cidenc.Encoder, req *cmds.Request) (bool, error) {
-	base, _ := req.Options[CidBaseOption].(string)
-	upgrade, defined := req.Options[UpgradeCidV0Option].(bool)
-	return handleCidBase(enc, base, upgrade, defined)
-}
-
-func HandleCidBaseLegacy(enc *cidenc.Encoder, req oldcmds.Request) (bool, error) {
-	base, _, _ := req.Option(CidBaseOption).String()
-	upgrade, defined, _ := req.Option(UpgradeCidV0Option).Bool()
-	return handleCidBase(enc, base, upgrade, defined)
-}
-
-func HandleCidBaseWithOverrideLegacy(req oldcmds.Request) (cidenc.Interface, error) {
-	defined, err := HandleCidBaseLegacy(nil, req)
-	if err != nil {
-		return nil, err
+	if h.enc == nil {
+		h.enc = &cidenc.Encoder{}
 	}
-	var enc cidenc.Interface = cidenc.Default
-	if !defined {
-		enc = cidenc.Default.WithOverride(req.Arguments()...)
+	*h.enc = e
+	return h, nil
+}
+
+func (h *CidBaseHandler) Encoder() cidenc.Encoder {
+	return *h.enc
+}
+
+func (h *CidBaseHandler) EncoderFromPath(p string) cidenc.Encoder {
+	if h.base == "" {
+		enc, _ := h.enc.FromPath(p)
+		return enc
+	} else {
+		return *h.enc
 	}
-	return enc, nil
 }

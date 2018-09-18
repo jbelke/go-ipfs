@@ -8,7 +8,6 @@ import (
 
 	cmds "github.com/ipfs/go-ipfs/commands"
 	"github.com/ipfs/go-ipfs/core"
-	cidenc "github.com/ipfs/go-ipfs/core/cidenc"
 	e "github.com/ipfs/go-ipfs/core/commands/e"
 	ncmd "github.com/ipfs/go-ipfs/core/commands/name"
 	ns "github.com/ipfs/go-ipfs/namesys"
@@ -85,15 +84,12 @@ Resolve the value of an IPFS DAG path:
 		name := req.Arguments()[0]
 		recursive, _, _ := req.Option("recursive").Bool()
 
-		enc := cidenc.Default // make local copy
-		defined, err := HandleCidBaseLegacy(&enc, req)
+		h, err := NewCidBaseHandlerLegacy(req).Proc()
 		if err != nil {
 			res.SetError(err, cmdkit.ErrNormal)
 			return
 		}
-		if !defined {
-			enc, _ = enc.FromPath(name)
-		}
+		enc := h.EncoderFromPath(name)
 
 		// the case when ipns is resolved step by step
 		if strings.HasPrefix(name, "/ipns/") && !recursive {

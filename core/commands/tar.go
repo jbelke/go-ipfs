@@ -13,6 +13,7 @@ import (
 	dag "gx/ipfs/QmXv5mwmQ74r4aiHcNeQ4GAmfB3aWJuqaE4WyDfDfvkgLM/go-merkledag"
 
 	"gx/ipfs/QmSP88ryZkHSRn1fnngAaV2Vcn63WUJzAavnRM9CVdU1Ky/go-ipfs-cmdkit"
+	apicid "gx/ipfs/QmSwrzRygK8yHBzd8gJJYedttQVQTZJrbEbpEBYvQLaRy8/go-cidutil/apicid"
 )
 
 var TarCmd = &cmds.Command{
@@ -62,13 +63,13 @@ represent it.
 		fi.FileName()
 		res.SetOutput(&coreunix.AddedObject{
 			Name: fi.FileName(),
-			Hash: core.FromCid(c),
+			Hash: apicid.FromCid(c),
 		})
 	},
 	Type: coreunix.AddedObject{},
 	Marshalers: cmds.MarshalerMap{
 		cmds.Text: func(res cmds.Response) (io.Reader, error) {
-			_, err := HandleCidBaseLegacy(nil, res.Request())
+			_, err := NewCidBaseHandlerLegacy(res.Request()).UseGlobal().Proc()
 			if err != nil {
 				return nil, err
 			}

@@ -20,6 +20,7 @@ import (
 	files "gx/ipfs/QmSP88ryZkHSRn1fnngAaV2Vcn63WUJzAavnRM9CVdU1Ky/go-ipfs-cmdkit/files"
 	datastore "gx/ipfs/QmSpg1CvpXQQow5ernt1gNBXaXV6yxyNqi7XoeerWfzB5w/go-datastore"
 	syncds "gx/ipfs/QmSpg1CvpXQQow5ernt1gNBXaXV6yxyNqi7XoeerWfzB5w/go-datastore/sync"
+	apicid "gx/ipfs/QmSwrzRygK8yHBzd8gJJYedttQVQTZJrbEbpEBYvQLaRy8/go-cidutil/apicid"
 	dag "gx/ipfs/QmXv5mwmQ74r4aiHcNeQ4GAmfB3aWJuqaE4WyDfDfvkgLM/go-merkledag"
 	config "gx/ipfs/QmYVqYJTVjetcf1guieEgWpK1PZtHPytP624vKzTF1P3r2/go-ipfs-config"
 	"gx/ipfs/Qma2KhbQarYTkmSJAeaMGRAg8HAXAhEWK8ge4SReG7ZSD3/go-blockservice"
@@ -93,7 +94,7 @@ func TestAddGCLive(t *testing.T) {
 
 	}()
 
-	addedHashes := make(map[core.APICid]struct{})
+	addedHashes := make(map[apicid.Hash]struct{})
 	select {
 	case o := <-out:
 		addedHashes[o.(*AddedObject).Hash] = struct{}{}
@@ -132,7 +133,7 @@ func TestAddGCLive(t *testing.T) {
 		if r.Error != nil {
 			t.Fatal(err)
 		}
-		if _, ok := addedHashes[core.FromCid(r.KeyRemoved)]; ok {
+		if _, ok := addedHashes[apicid.FromCid(r.KeyRemoved)]; ok {
 			t.Fatal("gc'ed a hash we just added")
 		}
 	}

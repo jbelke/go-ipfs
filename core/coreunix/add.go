@@ -23,6 +23,7 @@ import (
 	logging "gx/ipfs/QmRREK2CAZ5Re2Bd9zZFG6FeYDppUWt5cMgsoUEp3ktgSr/go-log"
 	mfs "gx/ipfs/QmRkrpnhZqDxTxwGCsDbuZMr7uCFZHH6SGfrcjgEQwxF3t/go-mfs"
 	files "gx/ipfs/QmSP88ryZkHSRn1fnngAaV2Vcn63WUJzAavnRM9CVdU1Ky/go-ipfs-cmdkit/files"
+	apicid "gx/ipfs/QmSwrzRygK8yHBzd8gJJYedttQVQTZJrbEbpEBYvQLaRy8/go-cidutil/apicid"
 	ipld "gx/ipfs/QmdDXJs4axxefSPgK6Y1QhpJWKuDPnGJiqgq4uncb4rFHL/go-ipld-format"
 	chunker "gx/ipfs/QmdSeG9s4EQ9TGruJJS9Us38TQDZtMmFGwzTYUDVqNTURm/go-ipfs-chunker"
 	bstore "gx/ipfs/QmegPGspn3RpTMQ23Fd3GVVMopo1zsEMurudbFMZ5UXBLH/go-ipfs-blockstore"
@@ -41,14 +42,14 @@ type Link struct {
 }
 
 type Object struct {
-	Hash  core.APICid
+	Hash  apicid.Hash
 	Links []Link
 	Size  string
 }
 
 type AddedObject struct {
 	Name  string
-	Hash  core.APICid `json:",omitempty"`
+	Hash  apicid.Hash `json:",omitempty"`
 	Bytes int64       `json:",omitempty"`
 	Size  string      `json:",omitempty"`
 }
@@ -564,7 +565,7 @@ func getOutput(dagnode ipld.Node) (*Object, error) {
 	}
 
 	output := &Object{
-		Hash:  core.FromCid(c),
+		Hash:  apicid.FromCid(c),
 		Size:  strconv.FormatUint(s, 10),
 		Links: make([]Link, len(dagnode.Links())),
 	}
